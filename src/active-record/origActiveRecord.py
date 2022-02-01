@@ -82,7 +82,6 @@ class ActiveRecord(object):
 
     @staticmethod
     def error_box(parent, message_text):
-        print(message_text)
         message = gtk.MessageDialog(parent, gtk.DialogFlags.MODAL, gtk.MessageType.ERROR, gtk.ButtonsType.OK)
         message.set_markup('<span size="xx-large" weight="heavy">Database Error</span>')
         message.format_secondary_text(message_text)
@@ -103,7 +102,7 @@ class ActiveRecord(object):
             for column in columns:
                 self._column_names.append(column[1])    # content of the 'name' column
                 if column[5]:   # content of the 'pk' column
-                    print('primary key is {}'.format(column[1]))
+                    print(f'primary key is {column[1]}')
                     self.__class__._pk = column[1] # primary key column name is class variable
 
         # Set an attribute for each column to its content in this instance (row)
@@ -129,14 +128,14 @@ class ActiveRecord(object):
     @classmethod
     def get(cls, pk):
         """Get a single AR instance for the row with the given pk"""
-        query = f"SELECT * FROM {cls._table_name} WHERE {1}=? LIMIT 1".format(cls._table_name)
+        query = f"SELECT * FROM {cls._table_name} WHERE {cls._pk}={pk} LIMIT 1"
         try:
-            cls._cursor.execute(query, (pk, ))
+            cls._cursor.execute(query)
             row = cls._cursor.fetchone()
-            obj = cls._from_row(row)
+            obj = cls._from_row(dict(list(zip(cls._column_names, row))))
             return obj
         except apsw.Error as e:
-            print(e)
+            print(e.args)
             ActiveRecord.error_box(e.message)
             return None
 
@@ -147,13 +146,10 @@ class ActiveRecord(object):
 
         Example: Grade.where(points=0)
         """
-        # try:
-        items = list(kwargs.items())
         columns = list(kwargs.keys())
         values = list(kwargs.values())
         sql_conditions = '=? and '.join(columns) + '=?'
         query = f"SELECT * FROM {cls._table_name} WHERE {sql_conditions}"
-        # query = "SELECT * FROM fred WHERE {1}".format(cls._table_name, sql_conditions)
         try:
             cls._cursor.execute(query, values)
             rows = cls._cursor.fetchall()
@@ -177,7 +173,6 @@ class ActiveRecord(object):
         """
 
         query = f"SELECT * FROM {cls._table_name}"
-        # query = "SELECT * FROM fred".format(cls._table_name)
         try:
             cls._cursor.execute(query)
             rows = cls._cursor.fetchall()
@@ -197,17 +192,21 @@ class ActiveRecord(object):
         """
         if self._in_db:  # already in database; this is an update
             print("updating a record")
-            sql_attributes = '=?, '.join(self._column_names) + '=?'
-            query = f"UPDATE {self._table_name} SET {sql_attributes} WHERE {self._pk + '=?'}"
-            values = [getattr(self, attr) for attr in self._column_names]
-            values.append(getattr(self, self._pk))
+            update_key = getattr(self, self.__class__._pk)
+            # We need to avoid updating the primary key column, even to the same value,
+            # as this seems to cause a UNIQUE constraint violation.
+            update_columns = self._column_names
+            update_columns.remove(self.__class__._pk)
+            sql_attributes = '=?, '.join(update_columns) + '=?'
+            query = f'UPDATE {self._table_name} SET {sql_attributes} WHERE {self.__class__._pk}=?'
+            values = [getattr(self, attr) for attr in update_columns] + [update_key]
             logging.debug(str(query) + "; " + str(values))
             try:
                 self._cursor.execute('begin')
                 self._cursor.execute(query, values)
             except apsw.Error as e:
                 self._cursor.execute('rollback')
-                raise Exception(e.args[0] + '\n\nThe record has not been updated')
+                self.error_box(None, f"SQLite error: {(' '.join(e.args))}\n\nThe record has not been updated")
             else:
                 self._cursor.execute('commit')
         else:  # not currently in database; this is an insertion
@@ -224,7 +223,7 @@ class ActiveRecord(object):
                 self.pk = self._cursor.getconnection().last_insert_rowid()
             except apsw.Error as e:
                 self._cursor.execute('rollback')
-                raise Exception(e.args[0] + '\n\nThe record has not been inserted')
+                self.error_box(None, f"SQLite error: {(' '.join(e.args))}\n\nThe record has not been inserted")
             else:
                 self._cursor.execute('commit')
 
@@ -258,11 +257,10 @@ class ActiveRecord(object):
         Delete the corresponding row from the database
         """
         if self._in_db:  # check the row is present
-            query = 'DELETE FROM {0} WHERE pk=?'.format(self._table_name)
-            args = (self.pk, )
+            query = 'DELETE FROM {self._table_name} WHERE {self.__class__._pk}=?'
             try:
                 self._cursor.execute('begin')
-                self._cursor.execute(query, (self.pk,))
+                self._cursor.execute(query, self.pk)
                 self._in_db = False  # now it definitely **isn't** in the database
                 self.pk = None
             except apsw.Error as e:
