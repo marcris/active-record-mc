@@ -229,28 +229,30 @@ class ActiveRecord(object):
 
     def modify(self, **kwargs):
         """
-        Change the contents of specified field(s) (only) in the row
+        Change specified fields (only) in the row in the database.
 
         Note this is dealing with an AR **instance** representing a row in the database.
         It is therefore an instance method, not a class method.
         """
-        columns = list(kwargs.keys())
-        placeholders = ', '.join(['?'] * len(columns))
-        values = list(kwargs.values())
-        sql_attributes = '=? and '.join(columns) + '=?'
-        query = "UPDATE {} SET {} WHERE {}=?".format(self._table_name, sql_attributes, placeholders, self.pk)
-        values = values + [self.pk]
-        logging.debug(str(query) + "; " + str(values))
-        try:
-            self._cursor.execute('begin')
-            self._cursor.execute(query, values)
-            self._in_db = True  # succeeded, so it must be in the database
-            self.pk = None
-        except apsw.Error as e:
-            self.error_box(e.message + '\n\nThe record has not been modified.')
-            self._cursor.execute('rollback')
+        if self._in_db:
+            print('Modifying a record')
+            update_key = getattr(self, self.__class__._pk)
+            columns = list(kwargs.keys())
+            values = list(kwargs.values())
+            sql_conditions = '=?, '.join(columns) + '=?'
+            query = f'UPDATE {self._table_name} SET {sql_conditions} \
+                      WHERE {self.__class__._pk}={update_key}'
+            logging.debug(str(query) + "; " + str(values))
+            try:
+                self._cursor.execute('begin')
+                self._cursor.execute(query, values)
+            except apsw.Error as e:
+                self._cursor.execute('rollback')
+                self.error_box(None, f"SQLite error: {(' '.join(e.args))}\n\nThe record has not been modified")
+            else:
+                self._cursor.execute('commit')
         else:
-            self._cursor.execute('commit')
+            self.error_box(None, "Attempt to modify a record not present in the database")
 
     def delete(self):
         """
