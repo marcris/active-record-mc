@@ -46,7 +46,8 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-
+from rich.traceback import install
+install(show_locals=True)
 
 class ActiveRecord(object):
     """
@@ -133,6 +134,7 @@ class ActiveRecord(object):
             cls._cursor.execute(query)
             row = cls._cursor.fetchone()
             obj = cls._from_row(dict(list(zip(cls._column_names, row))))
+            cls._in_db = True
             return obj
         except apsw.Error as e:
             print(e.args)
@@ -195,7 +197,7 @@ class ActiveRecord(object):
             update_key = getattr(self, self.__class__._pk)
             # We need to avoid updating the primary key column, even to the same value,
             # as this seems to cause a UNIQUE constraint violation.
-            update_columns = self._column_names
+            update_columns = self._column_names[:]
             update_columns.remove(self.__class__._pk)
             sql_attributes = '=?, '.join(update_columns) + '=?'
             query = f'UPDATE {self._table_name} SET {sql_attributes} WHERE {self.__class__._pk}=?'
