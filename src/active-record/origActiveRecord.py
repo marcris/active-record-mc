@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# origActiveRecord.py
+# ActiveRecord.py
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2020 Chris Brown
+# Copyright (c) 2022 Chris Brown
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,11 +25,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module is derived from a working example of the active record pattern created to supplement a talk given by Chris
-Mitchell at the Oregon Academy of Sciences meeting on January 26, 2011.
+This module is derived from a working example of the active record pattern created
+by Chris Mitchell to supplement a talk given at the Oregon Academy of Sciences
+meeting on January 26, 2011.
 
-The example is published on GitHub as https://github.com/ChrisTM/Active-Record-Example-for-a-Gradebook and the code is
-understood to be freely available.
+The example is published on GitHub as https://github.com/ChrisTM/Active-Record-Example-for-a-Gradebook
+and the code is understood to be freely available under the MIT license as above.
 """
 
 import apsw
@@ -65,19 +66,9 @@ class ActiveRecord(object):
     set to an empty list []. The __init__ will fill the column_names list with
     column names obtained by introspection of the database.
 
-    Allowance is made for the usage originally intended where the child class is
-    explicitly declared and the class variables explicitly declared and set.
+    Unlike in the original, the __init__ also introspects the name of the primary key
+    column, so that the requirement to call it pk no longer applies.
 
-        Example: Student(first_name="Alan", last_name="Turing")
-
-    after Student has been declared as a subclass of ActiveRecord with
-
-        class Student(ActiveRecord):
-            _table_name = 'student'
-            _column_names = ['first_name', 'last_name', .....]
-
-    Remember that this implementation of AR expects the primary key column
-    of a table to be named 'pk'.
     """
 
 
@@ -93,7 +84,7 @@ class ActiveRecord(object):
         """
         Create a new active record instance with the provided properties.
         """
-        cls = type(self)
+        cls = type(self)    # access the class variables
         db = apsw.Connection(cls._db_filename)
         cls._cursor = db.cursor()
 
@@ -138,7 +129,7 @@ class ActiveRecord(object):
             return obj
         except apsw.Error as e:
             print(e.args)
-            ActiveRecord.error_box(e.message)
+            cls.error_box(e.message)
             return None
 
     @classmethod
@@ -197,8 +188,8 @@ class ActiveRecord(object):
             update_key = getattr(self, self.__class__._pk)
             # We need to avoid updating the primary key column, even to the same value,
             # as this seems to cause a UNIQUE constraint violation.
-            update_columns = self._column_names[:]
-            update_columns.remove(self.__class__._pk)
+            update_columns = self._column_names[:]      # make a copy of the list of column names
+            update_columns.remove(self.__class__._pk)   # and remove the primary key column
             sql_attributes = '=?, '.join(update_columns) + '=?'
             query = f'UPDATE {self._table_name} SET {sql_attributes} WHERE {self.__class__._pk}=?'
             values = [getattr(self, attr) for attr in update_columns] + [update_key]
@@ -273,7 +264,7 @@ class ActiveRecord(object):
             else:
                 self._cursor.execute('commit')
         else:
-            print("not _in_db")
+            self.error_box(None, "Attempt to delete a record not present in the database")
 
 
 def class_for_table(db_filename, klass_name, table_name):
