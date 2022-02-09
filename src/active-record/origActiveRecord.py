@@ -68,7 +68,6 @@ class ActiveRecord(object):
 
     Unlike in the original, the __init__ also introspects the name of the primary key
     column, so that the requirement to call it pk no longer applies.
-
     """
 
 
@@ -166,6 +165,10 @@ class ActiveRecord(object):
         """
 
         query = f"SELECT * FROM {cls._table_name}"
+        if where:
+            query += " WHERE " + where
+        if order:
+            query += " ORDER BY " + order
         try:
             cls._cursor.execute(query)
             rows = cls._cursor.fetchall()
@@ -276,10 +279,9 @@ def class_for_table(db_filename, klass_name, table_name):
         - a database integer key, initialised to 0
     as attributes. The initialisation (see above) of an instance of this subclass will
     obtain the relevant column names by introspection of the database. The column name
-    of the primary key is assumed to be _pk, and substituted wherever required in the
+    of the primary key is included, and will be substituted wherever required in the
     generated SQL.
     """
-    print(f'class_for_table {db_filename}')
     return type(klass_name, (ActiveRecord,),
                 {'_db_filename': str(db_filename),
                  '_cursor': None,
