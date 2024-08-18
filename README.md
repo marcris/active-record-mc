@@ -26,4 +26,4 @@ More complex usage in conjunction with active-list-mc is demonstrated in TreeVie
 
 https://github.com/lerocha/chinook-database
 
-from which it uses the 'employees' table.
+from which it uses the "employees" table.
