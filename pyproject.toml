@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "active-record-mc"
+version = "0.7.1"
+description = "Simple ORM for basic operations in SQLite databases"
+license = "MIT"
+authors = ["Chris Brown <chris@marcrisoft.co.uk>"]
+readme = "README.md"
+
+classifiers = [
+    "Programming Language :: Python :: 3.8",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop"
+]
+packages = [
+    { include = "ActiveRecord", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+PyGObject = { version = "^3.42.0" }
+tomlkit = "0.*"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[virtualenvs]
+in-project = true
+

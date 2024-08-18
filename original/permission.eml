@@ -1,0 +1,32 @@
+From: Christopher Mitchell <chris@chrismitchell.name>
+Date: Tue, 20 Oct 2015 17:44:26 +0000
+Subject: Re: Your OAS talk on the Active Record design pattern
+To: Chris Brown <chris@marcrisoft.co.uk>
+Content-Type: text/plain; charset=UTF-8
+
+Hi Chris,
+
+Please feel free to use it in your software and in your book. Though
+attribution is not necessary, it is appreciated. Thanks for asking! I
+should probably add an MIT license to that repository. Thanks for the
+email, and best of luck on your book. Let me know if you have any questions.
+
+-Chris
+
+On Tue, Oct 20, 2015 at 9:17 AM Chris Brown <chris@marcrisoft.co.uk> wrote:
+
+> Some years ago, I wrote a home finance application for personal use,
+> initially in C++. More recently I have re-written it in Python, as part
+> of which I used the example code from your OAS talk on the Active Record
+> design pattern.
+>
+> Though I still don't regard myself as expert(!), I amassed a lot of
+> information as to doing things in Python and I'd like to make this
+> available to others, in book form. This would include your code (with
+> attribution of course) and I'm hoping you would have no objection to
+> this. Please let me know.
+>
+> Regards,
+>
+>          Chris Brown
+
